@@ -7,11 +7,20 @@ namespace PartyInvites.Controllers
 {
     public class HomeController : Controller
     {
+        private ResponseContext _context;
+
+        public HomeController(ResponseContext context) => _context = context; 
+
         public ViewResult Index()
         {
             int hour = DateTime.Now.Hour;
             ViewBag.Greeting = hour < 13 ? "Good morning" : "Good afternoon";
             return View("Myview");
+        }
+
+        public ViewResult Thanks(GuestResponse response)
+        {
+            return View("Thanks", response);
         }
 
         [HttpGet]
@@ -21,12 +30,15 @@ namespace PartyInvites.Controllers
         }
 
         [HttpPost]
-        public ViewResult RsvpForm(GuestResponse guestResponse)
+        public IActionResult RsvpForm(GuestResponse guestResponse)
         {
             if (ModelState.IsValid)
             {
-                Repository.AddResponse(guestResponse);
-                return View("Thanks", guestResponse);
+                _context.Add(guestResponse);
+                _context.SaveChanges();
+                return RedirectToAction(nameof(Thanks),
+                new { Name = guestResponse.Name, WillAttend = guestResponse.WillAttend });
+                //  return View("Thanks", guestResponse);
             }
             else
             {
@@ -36,7 +48,7 @@ namespace PartyInvites.Controllers
 
         public ViewResult ListResponses()
         {
-            return View(Repository.Responses.Where(r => r.WillAttend == true));
+            return View(_context.Responses.Where(r => r.WillAttend == true));
         }
         //public IActionResult About()
         //{
